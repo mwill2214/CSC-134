@@ -1,4 +1,4 @@
-M1LAB2 - The One with the Sandwich attemp-2
+M1LAB2 - The One with the Sandwich 
 
 # The Peanut Butter Sandwhich
 
