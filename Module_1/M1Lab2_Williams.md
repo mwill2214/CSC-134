@@ -12,8 +12,8 @@ Ingredients:
 
 ## Steps
 
-- step 1
-- 1.	Lay out the bread
+Steps:
+  1.	Lay out the bread
   2.	Put both slices on a plate.
   3.	Spread the peanut butter
   4.	Use the knife to spread peanut butter evenly over one side of each slice.
