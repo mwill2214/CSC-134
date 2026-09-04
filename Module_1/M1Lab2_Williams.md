@@ -25,6 +25,6 @@ Steps:
 
 You no the sandwich is done. 
 When the sandwhich is constructed.
-And the sandwhich is cut in half  
+And the sandwhich is cut in half.  
 
 - ??
