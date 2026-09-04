@@ -2,13 +2,11 @@ M1LAB2 - The One with the Sandwich
 
 # The Peanut Butter Sandwhich
 
-
 ## Assumptions
 Ingredients:
 - 2 slices of bread,
 - The peanut butter in a jar,
 - A butter knife.
-
 
 ## Steps
 
@@ -23,7 +21,10 @@ Steps:
   8.	Cut it in half if you like.
   9.	Enjoy! 
 
-
 ## Done When
+
+You no the sandwich is done. 
+When the sandwhich is constructed.
+And the sandwhich is cut in half  
 
 - ??
