@@ -1,5 +1,5 @@
 // CSC 134
-// M2T1 - Receipt
+// M2T2 - Receipt
 // WilliamsM
 // 14 September 2026
 // Build a receipt that looks like a receipt
@@ -45,7 +45,6 @@ int main()  {
 	tax_amount = meal_price * tax_rate;
 	total      = meal_price + tax_amount;
 
-	
 	// OUTPUT	
 	// TODO: Print like a receipt
 	string line = "-----------------------------------------";
@@ -58,7 +57,6 @@ int main()  {
 	cout << line << endl;
 	cout << setw(20) << "Total: " << setw(10) << total << endl;
 	
-
 	cout << "Thank You Come Again" << endl << endl;
 	
 	return 0;  // no errors
