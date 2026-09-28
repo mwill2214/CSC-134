@@ -5,7 +5,7 @@
 // 9/21/26
 // Get area of two rectangle, find the largest one.
 
-include <iostream>
+#include <iostream>
 using namespace std;
 
 int main() {
@@ -41,7 +41,7 @@ int main() {
 	if (area1 > area2) {
 		cout << "Rectangle 1 is larger." << endl;
 	}
-	else if (arae2 > area1) {
+	else if (area2 > area1) {
 		cout << "Rectangle 2 is larger." << endl;
 	}
 	else {
