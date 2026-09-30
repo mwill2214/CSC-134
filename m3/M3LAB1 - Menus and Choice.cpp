@@ -214,6 +214,4 @@ void chooseDoor4() {
     }
 }
 
-// If we had a Door #3, or 4, we would add another else if to our
-// main(), and then declare and define chooseDoor3() and so on.
 
