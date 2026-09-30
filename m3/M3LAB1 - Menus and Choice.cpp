@@ -18,7 +18,7 @@ int main() {
     int choice; // menu choice
 
     // ask the question
-    cout << "Do you choose Door 1 , Door 2 , Door 3 or Door 4 ?" << endl;
+    cout << "Do you choose Door 1 , Door 2 , Door 3 or Door 4?" << endl;
     cout << "1. Choose Door #1" << endl;
     cout << "2. Choose Door #2" << endl;
     cout << "3. Choose Door #3" << endl; // NEW: menu option for Door 3
