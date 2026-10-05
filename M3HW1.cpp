@@ -20,6 +20,7 @@ int main()
     // ==================================================
     cout << "Question 1" << endl;
 
+    
     // Step 1: make a string variable to hold the user's reply
     string chatAnswer;
 
