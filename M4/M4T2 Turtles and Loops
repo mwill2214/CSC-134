@@ -1,0 +1,9 @@
+# CSC 134
+# M4T2 - Turtles and Loops
+# WilliamsM
+# 7 Oct 2026
+# set up the Turtles
+# (choose your own colors)
+
+import turtle
+win = turtle.Screen
