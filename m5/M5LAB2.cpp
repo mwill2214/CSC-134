@@ -1,6 +1,7 @@
 // M5LAB2
+// CSC 134 
 // Program: Rectangle Area Calculator
-// Author: Queen B
+// Author: Myra Williams
 // Description: Gets a rectangle's length and width from the user,
 //              calculates the area, and displays all three values.
 //              Includes optional input validation (rejects non-numeric
