@@ -12,7 +12,6 @@
 //   6. question5() - Distance traveled table
 //   7. main()      - Menu loop that calls the functions above (Question 6)
 // =====================================================================
-
 // ---------- Step 1: Include the libraries we need ----------
 #include <iostream>   // cin and cout for keyboard input / screen output
 #include <iomanip>    // setw() and setprecision() for formatting output
