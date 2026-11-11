@@ -20,10 +20,12 @@
 // MENUS: every menu has at least 10 numbered options.
 //   - Option 0 is ALWAYS "Exit game", so you can quit from any menu.
 //   - Item menus list all 10 items plus "Back to main menu".
+//   - Menus are printed HORIZONTALLY (several options per row) to save space.
 
 #include <iostream>
 #include <string>
 #include <limits>      // numeric_limits, used to clear bad input
+#include <iomanip>     // setw, used to line up the horizontal menus
 using namespace std;
 
 // ---------- Enums: named constants instead of "magic numbers" ----------
@@ -86,33 +88,49 @@ int getChoice(int high) {
     }
 }
 
-// Print the main menu (13 options including Exit).
-void showMainMenu() {
-    cout << "\n===== MAIN MENU =====" << endl;
-    cout << " 1. Go north" << endl;
-    cout << " 2. Go east" << endl;
-    cout << " 3. Go south" << endl;
-    cout << " 4. Go west" << endl;
-    cout << " 5. Look around" << endl;
-    cout << " 6. Take an item" << endl;
-    cout << " 7. Use an item" << endl;
-    cout << " 8. Check inventory" << endl;
-    cout << " 9. Examine an item" << endl;
-    cout << "10. Show map" << endl;
-    cout << "11. Help" << endl;
-    cout << "12. Get a hint" << endl;
-    cout << " 0. Exit game" << endl;
+// Print one menu option as "number. label", padded to a fixed width so the
+// options line up in neat columns across the page.
+void printOption(int number, const string label, int width) {
+    cout << left << setw(width) << (to_string(number) + ". " + label);
 }
 
-// Print an item sub-menu: all 10 items, then Back (11) and Exit (0).
+// Print the main menu HORIZONTALLY (13 options including Exit).
+// Options are laid out side by side in rows so the whole menu fits on screen.
+void showMainMenu() {
+    cout << "\n===== MAIN MENU =====" << endl;
+    // Row 1: movement
+    printOption(1, "North", 16);
+    printOption(2, "East", 16);
+    printOption(3, "South", 16);
+    printOption(4, "West", 16);
+    printOption(5, "Look", 16);
+    cout << endl;
+    // Row 2: actions with items
+    printOption(6, "Take", 16);
+    printOption(7, "Use", 16);
+    printOption(8, "Inventory", 16);
+    printOption(9, "Examine", 16);
+    printOption(10, "Map", 16);
+    cout << endl;
+    // Row 3: help and exit
+    printOption(11, "Help", 16);
+    printOption(12, "Hint", 16);
+    printOption(0, "EXIT", 16);
+    cout << endl;
+}
+
+// Print an item sub-menu HORIZONTALLY: all 10 items, then Back (11) and Exit (0).
 // 'title' says what the menu is for (Take / Use / Examine).
+// Items are printed 4 per row; a loop starts a new row after every 4th option.
 void showItemMenu(const string title, const string names[]) {
     cout << "\n===== " << title << " WHICH ITEM? =====" << endl;
     for (int i = 0; i < NUM_ITEMS; i++) {
-        cout << (i + 1 < 10 ? " " : "") << (i + 1) << ". " << names[i] << endl;
+        printOption(i + 1, names[i], 20);
+        if ((i + 1) % 4 == 0) cout << endl;      // end the row after 4 options
     }
-    cout << ITEM_MENU_BACK << ". Back to main menu" << endl;
-    cout << " 0. Exit game" << endl;
+    printOption(ITEM_MENU_BACK, "BACK", 20);     // 11 = back to main menu
+    printOption(0, "EXIT", 20);                  // 0 = exit game
+    cout << endl;
 }
 
 int main() {
