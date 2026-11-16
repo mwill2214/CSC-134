@@ -3,13 +3,23 @@
 // network. Collect the laptop, the admin token, and the firewall disk, then
 // lock the intruder out from the Server Room before you run out of moves.
 //
+// This version combines Midnight Breach with the M6BONUS1 menu program.
+// AI assistance: Claude (Anthropic).
+//
 // Concepts used: arrays (1D, parallel, 2D), loops (while/for), if/else,
-// functions, enums, constants, strings, input validation, ASCII graphics.
+// functions, enums, constants, strings, input validation, ASCII graphics,
+// an adjacency list (exits[room][direction]), and numbered menus.
+// Regular arrays only (no vectors).
+//
+// MENUS: every menu has at least 10 numbered options.
+//   - Option 0 is ALWAYS "EXIT", so you can quit from any menu.
+//   - Item menus list all 14 items plus BACK and EXIT.
+//   - Menus are printed HORIZONTALLY (several options per row).
 
 #include <iostream>
 #include <string>
-#include <limits>
-#include <iomanip>
+#include <limits>      // numeric_limits, used to clear bad input
+#include <iomanip>     // setw, used to line up the horizontal menus
 using namespace std;
 
 // ---------- Constants and enums ----------
@@ -29,6 +39,29 @@ const int IN_INVENTORY = -2;   // item is being carried
 const int GONE = -3;           // item was used up
 const int NO_EXIT = -1;        // no door in that direction
 const int START_MOVES = 40;    // moves before the breach completes
+
+// Main menu option numbers (so the code reads like words, not numbers)
+const int MENU_EXIT = 0;
+const int MENU_NORTH = 1;
+const int MENU_EAST = 2;
+const int MENU_SOUTH = 3;
+const int MENU_WEST = 4;
+const int MENU_LOOK = 5;
+const int MENU_TAKE = 6;
+const int MENU_USE = 7;
+const int MENU_INVENTORY = 8;
+const int MENU_EXAMINE = 9;
+const int MENU_MAP = 10;
+const int MENU_HELP = 11;
+const int MENU_HINT = 12;
+const int MAIN_MENU_MAX = 12;
+
+// Item sub-menu: options 1..14 pick an item, 15 goes back, 0 exits
+const int ITEM_MENU_BACK = NUM_ITEMS + 1;   // = 15
+
+// Values returned by pickItem() when the player does not choose an item
+const int PICK_BACK = -1;
+const int PICK_EXIT = -2;
 
 const string DIR_NAMES[NUM_DIRECTIONS] = {"north", "east", "south", "west"};
 
@@ -141,35 +174,78 @@ const string ITEM_ICON[NUM_ITEMS] = {
 
 // ---------- Functions ----------
 
-// Keep asking until the player enters a whole number from 0 to high.
+// Ask the player for a number between 0 and 'high'.
+// Keeps asking until the input is valid. Returns 0 (Exit) if input ends,
+// so the game can never get stuck in an infinite loop.
 int getChoice(int high) {
     int choice;
     while (true) {
-        cout << "Choice: ";
+        cout << "Enter choice (0 to exit): ";
         if (!(cin >> choice)) {
-            if (cin.eof()) return 0;             // input ended: quit safely
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            if (cin.eof()) return 0;                 // no more input: exit
+            cin.clear();                             // reset the error flag
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');  // throw away bad text
             cout << "Please enter a number." << endl;
         } else if (choice < 0 || choice > high) {
-            cout << "Enter a number from 0 to " << high << "." << endl;
+            cout << "Please choose a number from 0 to " << high << "." << endl;
         } else {
             return choice;
         }
     }
 }
 
-// Print the item list in two columns; returns the chosen item index,
-// or -1 for "back".
-int pickItem(const string names[]) {
-    cout << "\nWhich item?" << endl;
+// Print one menu option as "number. label", padded to a fixed width so the
+// options line up in neat columns across the page.
+void printOption(int number, const string label, int width) {
+    cout << left << setw(width) << (to_string(number) + ". " + label);
+}
+
+// Print the main menu HORIZONTALLY (13 options including Exit).
+void showMainMenu() {
+    cout << "\n===== MAIN MENU =====" << endl;
+    // Row 1: movement
+    printOption(MENU_NORTH, "North", 16);
+    printOption(MENU_EAST, "East", 16);
+    printOption(MENU_SOUTH, "South", 16);
+    printOption(MENU_WEST, "West", 16);
+    printOption(MENU_LOOK, "Look", 16);
+    cout << endl;
+    // Row 2: actions with items
+    printOption(MENU_TAKE, "Take", 16);
+    printOption(MENU_USE, "Use", 16);
+    printOption(MENU_INVENTORY, "Inventory", 16);
+    printOption(MENU_EXAMINE, "Examine", 16);
+    printOption(MENU_MAP, "Map", 16);
+    cout << endl;
+    // Row 3: help and exit
+    printOption(MENU_HELP, "Help", 16);
+    printOption(MENU_HINT, "Hint", 16);
+    printOption(MENU_EXIT, "EXIT", 16);
+    cout << endl;
+}
+
+// Print an item sub-menu HORIZONTALLY: all 14 items, then Back (15) and Exit (0).
+// 'title' says what the menu is for (Take / Use / Examine).
+// Items are printed 4 per row; a loop starts a new row after every 4th option.
+void showItemMenu(const string title, const string names[]) {
+    cout << "\n===== " << title << " - WHICH ITEM? =====" << endl;
     for (int i = 0; i < NUM_ITEMS; i++) {
-        cout << left << setw(4) << (to_string(i + 1) + ".")
-             << setw(20) << names[i];
-        if (i % 2 == 1) cout << endl;            // two items per row
+        printOption(i + 1, names[i], 22);
+        if ((i + 1) % 4 == 0) cout << endl;      // end the row after 4 options
     }
-    cout << "0.  Back" << endl;
-    return getChoice(NUM_ITEMS) - 1;             // -1 means Back
+    printOption(ITEM_MENU_BACK, "BACK", 22);     // 15 = back to main menu
+    printOption(MENU_EXIT, "EXIT", 22);          // 0 = exit game
+    cout << endl;
+}
+
+// Show an item menu and get the player's pick.
+// Returns the item index (0..NUM_ITEMS-1), PICK_BACK, or PICK_EXIT.
+int pickItem(const string title, const string names[]) {
+    showItemMenu(title, names);
+    int pick = getChoice(ITEM_MENU_BACK);
+    if (pick == 0) return PICK_EXIT;
+    if (pick == ITEM_MENU_BACK) return PICK_BACK;
+    return pick - 1;                             // menu number -> array index
 }
 
 // Draw the whole building from the grid. * marks the player.
@@ -192,7 +268,7 @@ void showMap(const string roomName[], const int grid[GRID_ROWS][GRID_COLS], int 
 }
 
 int main() {
-    // ---------- Parallel arrays: rooms ----------
+    // ---------- Parallel arrays: rooms (index with the Room enum) ----------
     string roomName[NUM_ROOMS] = {
         "Security Office", "Server Room", "Network Closet", "Break Room",
         "Archive", "Executive Office", "Lobby", "Parking Garage",
@@ -213,7 +289,7 @@ int main() {
         "Headsets and half-finished tickets cover the desks."
     };
 
-    // ---------- Parallel arrays: items ----------
+    // ---------- Parallel arrays: items (index with the Item enum) ----------
     string itemName[NUM_ITEMS] = {
         "access badge", "laptop", "admin token", "firewall disk",
         "vault key", "phishing printout", "usb drive", "flashlight",
@@ -236,6 +312,24 @@ int main() {
         "A folded map of the whole building.",
         "A sticky note in messy handwriting."
     };
+    // What happens when you use each item (special cases are handled in the code)
+    string itemUseText[NUM_ITEMS] = {
+        "You wave the badge around. It only works on the closet door.",
+        "The laptop needs the Server Room, a token, and a firewall disk.",
+        "The token needs a laptop to plug into.",
+        "The disk needs a laptop to load it.",
+        "You turn the key over. It must fit the vault door.",
+        "The email came from the CEO's account. The attacker has CEO credentials.",
+        "You turn the USB drive over. Try the Server Room.",
+        "You click on the flashlight. The shadows retreat.",
+        "IT chatter: 'The firewall disk is locked in the Vault.'",
+        "You sip the coffee. Slightly better.",
+        "You pop the can. Zoom!",
+        "Just keep it with you. Every other move will be free.",
+        "You unfold the map.",
+        "Note: 'Vault key is in the Parking Garage. Bring a light!'"
+    };
+    // Where each item starts: a room number, IN_INVENTORY, or GONE
     int itemLoc[NUM_ITEMS] = {
         ARCHIVE, SECURITY_OFFICE, NETWORK_CLOSET, VAULT,
         GARAGE, BREAK_ROOM, EXEC_OFFICE, HELP_DESK,
@@ -250,7 +344,8 @@ int main() {
         { GARAGE,    LOBBY,           BREAK_ROOM,  VAULT          }
     };
 
-    // ---------- 2D array: exits[room][direction] built from the grid ----------
+    // ---------- Adjacency list (2D array) built from the grid ----------
+    // exits[from_room][direction] = to_room, or NO_EXIT (-1)
     int exits[NUM_ROOMS][NUM_DIRECTIONS];
     for (int r = 0; r < NUM_ROOMS; r++)
         for (int d = 0; d < NUM_DIRECTIONS; d++)
@@ -299,23 +394,27 @@ int main() {
         }
 
         cout << "Exits:";
+        bool hasExits = false;
         for (int d = 0; d < NUM_DIRECTIONS; d++)     // show available exits
-            if (exits[current][d] != NO_EXIT)
+            if (exits[current][d] != NO_EXIT) {
                 cout << " " << DIR_NAMES[d];
+                hasExits = true;
+            }
+        if (!hasExits) cout << " none";
         cout << endl;
 
         if (movesLeft <= 5)       cout << "!! CRITICAL: transfer 95% complete !!" << endl;
         else if (movesLeft <= 12) cout << "WARNING: intruder is copying more data..." << endl;
 
-        cout << "\n1.North 2.East 3.South 4.West 5.Look 6.Take 7.Use" << endl;
-        cout << "8.Inventory 9.Examine 10.Hint 0.Quit" << endl;
-        int choice = getChoice(10);
+        // Show the menu and get the player's choice
+        showMainMenu();
+        int choice = getChoice(MAIN_MENU_MAX);
 
-        if (choice == 0) {
+        if (choice == MENU_EXIT) {                            // exit
             playing = false;
 
-        } else if (choice >= 1 && choice <= 4) {             // movement
-            int next = exits[current][choice - 1];
+        } else if (choice >= MENU_NORTH && choice <= MENU_WEST) {   // movement
+            int next = exits[current][choice - MENU_NORTH];   // look up the adjacency list
             if (next == NO_EXIT) {
                 cout << "You can't go that way." << endl;
             } else if (next == NETWORK_CLOSET && itemLoc[BADGE] != IN_INVENTORY) {
@@ -332,12 +431,14 @@ int main() {
                     movesLeft--;
             }
 
-        } else if (choice == 5) {                             // look
+        } else if (choice == MENU_LOOK) {                     // look
             cout << ROOM_ART[current] << endl;
 
-        } else if (choice == 6) {                             // take
-            int item = pickItem(itemName);
-            if (item >= 0) {
+        } else if (choice == MENU_TAKE) {                     // take
+            int item = pickItem("TAKE", itemName);
+            if (item == PICK_EXIT) {
+                playing = false;
+            } else if (item >= 0) {
                 if (current == GARAGE && !hasLight) {
                     cout << "It's too dark to find anything." << endl;
                 } else if (itemLoc[item] == current) {
@@ -349,12 +450,15 @@ int main() {
                 }
             }
 
-        } else if (choice == 7) {                             // use
-            int item = pickItem(itemName);
-            if (item >= 0) {
+        } else if (choice == MENU_USE) {                      // use
+            int item = pickItem("USE", itemName);
+            if (item == PICK_EXIT) {
+                playing = false;
+            } else if (item >= 0) {
                 if (itemLoc[item] != IN_INVENTORY) {
                     cout << "You aren't carrying that." << endl;
                 } else if (item == LAPTOP) {
+                    // Winning move: needs the Server Room, token, and disk
                     if (current != SERVER_ROOM) {
                         cout << "The laptop shows 'No secure connection'. Try the Server Room." << endl;
                     } else if (itemLoc[TOKEN] != IN_INVENTORY) {
@@ -386,22 +490,12 @@ int main() {
                     cout << "Zoom! +5 moves." << endl;
                 } else if (item == MAP) {
                     showMap(roomName, grid, current);
-                } else if (item == PRINTOUT) {
-                    cout << "The email came from the CEO's account. The attacker has CEO credentials." << endl;
-                } else if (item == HEADSET) {
-                    cout << "IT chatter: 'The firewall disk is locked in the Vault.'" << endl;
-                } else if (item == STICKY_NOTE) {
-                    cout << "Note: 'Vault key is in the Parking Garage. Bring a light!'" << endl;
-                } else if (item == FLASHLIGHT) {
-                    cout << "You click on the flashlight. The shadows retreat." << endl;
-                } else if (item == SKATEBOARD) {
-                    cout << "Just keep it with you. Every other move will be free." << endl;
                 } else {
-                    cout << "Nothing happens. Maybe it works somewhere else." << endl;
+                    cout << itemUseText[item] << endl;        // normal use message
                 }
             }
 
-        } else if (choice == 8) {                             // inventory
+        } else if (choice == MENU_INVENTORY) {                // inventory
             cout << "You carry:" << endl;
             bool any = false;
             for (int i = 0; i < NUM_ITEMS; i++)
@@ -411,16 +505,28 @@ int main() {
                 }
             if (!any) cout << "  nothing" << endl;
 
-        } else if (choice == 9) {                             // examine
-            int item = pickItem(itemName);
-            if (item >= 0) {
+        } else if (choice == MENU_EXAMINE) {                  // examine
+            int item = pickItem("EXAMINE", itemName);
+            if (item == PICK_EXIT) {
+                playing = false;
+            } else if (item >= 0) {
                 if (itemLoc[item] == IN_INVENTORY || itemLoc[item] == current)
                     cout << ITEM_ICON[item] << "  " << itemDesc[item] << endl;
                 else
                     cout << "You don't see that here." << endl;
             }
 
-        } else if (choice == 10) {                            // hint
+        } else if (choice == MENU_MAP) {                      // map (always available)
+            showMap(roomName, grid, current);
+
+        } else if (choice == MENU_HELP) {                     // help
+            cout << "Type the number of a menu option and press Enter." << endl;
+            cout << "Option 0 exits the game from any menu." << endl;
+            cout << "Goal: get the laptop, admin token, and firewall disk," << endl;
+            cout << "then use the laptop in the Server Room before moves run out." << endl;
+            cout << "Taking items scores points; saving moves gives a bonus." << endl;
+
+        } else if (choice == MENU_HINT) {                     // hint (changes with progress)
             if (itemLoc[LAPTOP] != IN_INVENTORY)
                 cout << "Hint: you need the laptop from the Security Office." << endl;
             else if (itemLoc[TOKEN] != IN_INVENTORY && itemLoc[BADGE] != IN_INVENTORY)
