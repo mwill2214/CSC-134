@@ -24,7 +24,7 @@
 //
 //   THE 12 ITEMS: keycard, cable, coffee, flashlight, laptop, usb drive,
 //          screwdriver, notebook, cable tester, headset, toolkit, radio.
-//          Every item can be picked up with Take. You need 7 for Silver.
+//          Every item can be picked up with Take. You need 3 for Silver.
 //
 //   THE TWO LOCKS AND KEYS (both must be solved to win):
 //     LOCK 1 - Server Room keypad door (north of the Lobby)
@@ -39,9 +39,10 @@
 //          Network Closet, and Use it on the loose port.
 //
 //   TO EARN ALL THREE LEVELS (menu numbers):
-//          1. Visit all 7 rooms with North(1) East(2) South(3) West(4).
-//          2. Read a sign(14) or talk to Priya(13), and Take(6) 7 items.
-//          3. Take the notebook, Use(7) it to read the code, go North and
+//          1. BRONZE: visit any 3 of the 7 rooms with North(1) East(2)
+//             South(3) West(4), and Take(6) 3 items. Then move on to Silver.
+//          2. SILVER: read a sign(14) or talk to Priya(13), and Take(6) 3 items.
+//          3. GOLD: take the notebook, Use(7) it to read the code, go North and
 //             type the code, take the cable, take the keycard on the Roof,
 //             walk into the Network Closet, then Use(7) the cable.
 //          Menu 15 (Progress) shows a checklist and a NEXT STEP at any time.
@@ -50,17 +51,27 @@
 // LEVEL CHECKLIST (progress bar every turn; menu 15 shows a [X]/[ ] checklist
 //                  with HOW-TO steps and a NEXT STEP for each level)
 // ---------------------------------------------------------------------
-//   BRONZE: Rooms with exits between them.
-//           (Earned when you have VISITED all 7 rooms.)
+//   BRONZE: At least three different rooms, which have exits between them.
+//           (Earned when you have VISITED 3 different rooms AND picked up
+//            3 items. The game has 7 rooms in all, but you only need 3 of
+//            them to finish Bronze and move forward to Silver.)
 //   SILVER: Bronze + dialog that explains the point of the game (wall
 //           signs, NPC Priya) + interaction with items (picking up).
 //           (Earned when you have read a sign or talked to Priya AND
-//            picked up 7 items.)
-//   GOLD:   Silver + an ending + at least one lock-and-key situation.
-//           (Earned when you finish the game: you unlocked BOTH locks
-//            with their keys and reached the "Network Restored" ending.)
-//   To change how hard the levels are, edit ROOMS_FOR_BRONZE and
-//   ITEMS_FOR_SILVER near the top of the program.
+//            picked up 3 items.)
+//   GOLD:   Silver, plus the following:
+//             * Some kind of ending ("ENDING: NETWORK RESTORED").
+//             * At least one lock and key situation: you find a key in one
+//               room and use it to open a door in a different room.
+//               This game has TWO of them:
+//                 - the CODE written in the notebook (Lobby) opens the
+//                   keypad door to the Server Room.
+//                 - the KEYCARD found on the Roof opens the door to the
+//                   Network Closet.
+//           (Earned when you finish the game: Silver is done, both locks
+//            were opened with their keys, and you reached the ending.)
+//   To change how hard the levels are, edit ROOMS_FOR_BRONZE,
+//   ITEMS_FOR_BRONZE, and ITEMS_FOR_SILVER near the top of the program.
 //
 // ---------------------------------------------------------------------
 // DATA STRUCTURE CONCEPTS USED
@@ -110,8 +121,9 @@ const int GONE = -3;           // the item has been used up
 const int SERVER_CODE = 4721;
 
 // How much the player must do to earn each level.
-const int ROOMS_FOR_BRONZE = NUM_ROOMS;   // Bronze: visit all 7 rooms
-const int ITEMS_FOR_SILVER = 7;           // Silver: pick up 7 items
+const int ROOMS_FOR_BRONZE = 3;           // Bronze: visit any 3 of the 7 rooms
+const int ITEMS_FOR_BRONZE = 3;           // Bronze: ALSO pick up 3 items
+const int ITEMS_FOR_SILVER = 3;           // Silver: pick up 3 items in total
 
 // Main menu option numbers (named so the code reads like words)
 const int MENU_EXIT = 0;
@@ -234,21 +246,30 @@ void showProgressDetails(const bool visited[], const string roomNames[],
     for (int i = 0; i < NUM_ROOMS; i++)
         if (visited[i]) roomsSeen++;
 
-    bool bronze = (roomsSeen >= ROOMS_FOR_BRONZE);
+    bool roomsDone = (roomsSeen >= ROOMS_FOR_BRONZE);            // Bronze task 1
+    bool bronzeItemsDone = (itemsCollected >= ITEMS_FOR_BRONZE); // Bronze task 2
+    bool bronze = roomsDone && bronzeItemsDone;
     bool itemsDone = (itemsCollected >= ITEMS_FOR_SILVER);
     bool silver = bronze && dialogHeard && itemsDone;
 
     cout << "\n===== YOUR PROGRESS =====" << endl;
 
-    // ----- BRONZE: list every room by name so the player knows where to go -----
-    cout << "BRONZE (" << (bronze ? "COMPLETE" : "in progress") << ") - visit all "
-         << ROOMS_FOR_BRONZE << " rooms (" << roomsSeen << "/" << ROOMS_FOR_BRONZE << ")" << endl;
+    // ----- BRONZE: visit 3 rooms + pick up 3 items. Every room is listed by
+    //       name so the player knows where they can go. -----
+    cout << "BRONZE (" << (bronze ? "COMPLETE - move on to Silver!" : "in progress") << ")" << endl;
+    cout << "  " << mark(roomsDone) << " Visit " << ROOMS_FOR_BRONZE << " different rooms ("
+         << roomsSeen << " visited, " << ROOMS_FOR_BRONZE << " needed)" << endl;
+    cout << "      The " << NUM_ROOMS << " rooms you can visit (any " << ROOMS_FOR_BRONZE << " count):" << endl;
     for (int i = 0; i < NUM_ROOMS; i++) {
-        cout << "  " << mark(visited[i]) << " " << left << setw(16) << roomNames[i]
+        cout << "        " << mark(visited[i]) << " " << left << setw(16) << roomNames[i]
              << roomWhere[i] << endl;
     }
-    if (!bronze)
+    if (!roomsDone)
         cout << "      HOW: use North/East/South/West (menu 1-4) to walk into the rooms marked [ ]." << endl;
+    cout << "  " << mark(bronzeItemsDone) << " Pick up " << ITEMS_FOR_BRONZE << " items ("
+         << itemsCollected << " picked up, " << ITEMS_FOR_BRONZE << " needed)" << endl;
+    if (!bronzeItemsDone)
+        cout << "      HOW: choose Take (menu 6) and pick items that are in your room." << endl;
 
     // ----- SILVER -----
     cout << "SILVER (" << (silver ? "COMPLETE" : "in progress")
@@ -262,7 +283,10 @@ void showProgressDetails(const bool visited[], const string roomNames[],
         cout << "      HOW: choose Take (menu 6) and pick items that are in your room." << endl;
 
     // ----- GOLD -----
-    cout << "GOLD (" << (won ? "COMPLETE" : "in progress") << ")" << endl;
+    cout << "GOLD (" << (won ? "COMPLETE" : "in progress")
+         << ") - Silver + a lock and key + an ending" << endl;
+    cout << "  " << mark(silver) << " Silver is complete (Gold builds on Silver)" << endl;
+    cout << "  LOCK AND KEY: find a key in one room to open a door in a different room." << endl;
     cout << "  " << mark(serverUnlocked) << " Unlock the Server Room keypad door (LOCK 1, code key)" << endl;
     if (!serverUnlocked)
         cout << "      HOW: Take the notebook in the Lobby, Use it (menu 7) to read the code,"
@@ -271,6 +295,8 @@ void showProgressDetails(const bool visited[], const string roomNames[],
     if (!closetUnlocked)
         cout << "      HOW: Take the keycard on the Roof (west of the Lobby), then walk"
              << "\n           South from the Break Room into the Network Closet." << endl;
+    cout << "  " << mark(serverUnlocked || closetUnlocked)
+         << " At least one lock and key situation solved" << endl;
     cout << "  " << mark(won) << " Reach the ending (fix the network)" << endl;
     if (!won)
         cout << "      HOW: Take the cable in the Server Room, carry it into the Network"
@@ -280,7 +306,9 @@ void showProgressDetails(const bool visited[], const string roomNames[],
     // ----- NEXT STEP: the single most useful thing to do right now -----
     cout << "NEXT STEP: ";
     if (won)                    cout << "You finished the game!" << endl;
-    else if (!bronze)           cout << "Walk to a room you have not visited yet (menu 1-4)." << endl;
+    else if (!roomsDone)        cout << "Walk to a room you have not visited yet (menu 1-4)." << endl;
+    else if (!bronzeItemsDone)  cout << "Take an item (menu 6). You have " << itemsCollected
+                                     << " of " << ITEMS_FOR_BRONZE << "." << endl;
     else if (!dialogHeard)      cout << "Read a sign (menu 14) or talk to Priya (menu 13)." << endl;
     else if (!itemsDone)        cout << "Take more items (menu 6). You have " << itemsCollected
                                      << " of " << ITEMS_FOR_SILVER << "." << endl;
@@ -544,9 +572,11 @@ int main() {
             if (visited[i]) roomsSeen++;
 
         // STEP C: check whether Bronze or Silver was just earned
-        if (!bronzeDone && roomsSeen >= ROOMS_FOR_BRONZE) {
+        if (!bronzeDone && roomsSeen >= ROOMS_FOR_BRONZE && itemsCollected >= ITEMS_FOR_BRONZE) {
             bronzeDone = true;
-            cout << "\n*** BRONZE LEVEL COMPLETE: you explored all " << ROOMS_FOR_BRONZE << " rooms! ***" << endl;
+            cout << "\n*** BRONZE LEVEL COMPLETE: you visited " << ROOMS_FOR_BRONZE
+                 << " rooms and picked up " << ITEMS_FOR_BRONZE << " items! ***" << endl;
+            cout << "*** You can now move on to SILVER (menu 15 shows what to do). ***" << endl;
         }
         if (!silverDone && bronzeDone && dialogHeard && itemsCollected >= ITEMS_FOR_SILVER) {
             silverDone = true;
@@ -557,8 +587,9 @@ int main() {
         // STEP D: describe the current room and show progress
         cout << "\n";
         showLevelBar(bronzeDone, silverDone, goldDone);
-        cout << "Rooms visited: " << roomsSeen << "/" << ROOMS_FOR_BRONZE
-             << "   Items picked up: " << itemsCollected << "/" << ITEMS_FOR_SILVER << endl;
+        cout << "Rooms visited: " << roomsSeen << " of " << NUM_ROOMS
+             << " (Bronze needs " << ROOMS_FOR_BRONZE << ")   Items picked up: " << itemsCollected
+             << " (Bronze needs " << ITEMS_FOR_BRONZE << ", Silver needs " << ITEMS_FOR_SILVER << ")" << endl;
         cout << "You are in the " << roomNames[currentRoom] << endl;
         cout << roomDescriptions[currentRoom] << endl;
 
@@ -603,6 +634,7 @@ int main() {
                 if (itemLocation[KEYCARD] == IN_INVENTORY) {
                     closetUnlocked = true;                 // the key opens the lock for good
                     cout << "You swipe the keycard. The Network Closet lock clicks open!" << endl;
+                    cout << "  [LOCK AND KEY] The keycard from the Roof opened a door in a different room!" << endl;
                 } else {
                     cout << "The door is locked. It needs a keycard." << endl;
                     canEnter = false;
@@ -613,6 +645,7 @@ int main() {
                 bool quit = false;
                 if (tryKeypad(quit)) {
                     serverUnlocked = true;                 // the code opens the lock for good
+                    cout << "  [LOCK AND KEY] The code from the notebook opened a door in a different room!" << endl;
                 } else {
                     canEnter = false;
                     if (quit) gameRunning = false;         // input ended: stop the game
@@ -644,7 +677,7 @@ int main() {
                     itemLocation[item] = IN_INVENTORY;     // move it into the inventory
                     itemsCollected++;                      // counts toward Silver
                     cout << "Taken: " << itemDescriptions[item] << endl;
-                    cout << "(Items picked up: " << itemsCollected << "/" << ITEMS_FOR_SILVER << ")" << endl;
+                    cout << "(Items picked up so far: " << itemsCollected << ")" << endl;
                 } else {
                     cout << "You don't see that here." << endl;
                 }
@@ -664,7 +697,9 @@ int main() {
                     // WINNING MOVE: cable used on the loose port in the closet.
                     // Plugging in ENDS the game, so if Bronze or Silver is not
                     // finished yet, warn the player and let them decide.
-                    bool readyForGold = (roomsSeen >= ROOMS_FOR_BRONZE && dialogHeard
+                    bool readyForGold = (roomsSeen >= ROOMS_FOR_BRONZE
+                                         && itemsCollected >= ITEMS_FOR_BRONZE
+                                         && dialogHeard
                                          && itemsCollected >= ITEMS_FOR_SILVER);
                     int confirm = 1;                       // 1 = plug it in
                     if (!readyForGold) {
@@ -736,8 +771,10 @@ int main() {
             cout << "LOCK 1: Server Room keypad. The code is in the notebook." << endl;
             cout << "LOCK 2: Network Closet door. The key is the keycard." << endl;
             cout << "Talk to Priya in the Break Room and read signs for clues." << endl;
-            cout << "Bronze = visit all " << ROOMS_FOR_BRONZE << " rooms. Silver = dialog + pick up "
-                 << ITEMS_FOR_SILVER << " items." << endl;
+            cout << "Bronze = visit " << ROOMS_FOR_BRONZE << " rooms + pick up " << ITEMS_FOR_BRONZE
+                 << " items. Silver = Bronze + dialog + pick up " << ITEMS_FOR_SILVER << " items." << endl;
+            cout << "Gold = Silver + a lock and key (find a key in one room to open a door in another)"
+                 << " + an ending." << endl;
             cout << "Option 15 shows your Bronze, Silver, and Gold progress." << endl;
 
         // ----- 12: HINT (changes depending on what the player has done) -----
@@ -783,19 +820,23 @@ int main() {
     int roomsSeenEnd = 0;
     for (int i = 0; i < NUM_ROOMS; i++)
         if (visited[i]) roomsSeenEnd++;
-    bronzeDone = (roomsSeenEnd >= ROOMS_FOR_BRONZE);
+    bronzeDone = (roomsSeenEnd >= ROOMS_FOR_BRONZE) && (itemsCollected >= ITEMS_FOR_BRONZE);
     silverDone = bronzeDone && dialogHeard && (itemsCollected >= ITEMS_FOR_SILVER);
 
     if (won && serverUnlocked && closetUnlocked) {
         showWinEnding(moves);
         if (silverDone) {
             goldDone = true;   // Silver + ending + both lock-and-key puzzles solved
-            cout << "\n*** GOLD LEVEL COMPLETE: ending reached with both locks opened! ***" << endl;
+            cout << "\n*** GOLD LEVEL COMPLETE! ***" << endl;
+            cout << "  Silver: done" << endl;
+            cout << "  Lock and key: the notebook code opened the Server Room, and the" << endl;
+            cout << "                keycard from the Roof opened the Network Closet" << endl;
+            cout << "  Ending: NETWORK RESTORED" << endl;
         } else {
             // Gold is built on top of Silver, so tell the player what is missing
             cout << "\nYou fixed the network, but GOLD also needs BRONZE and SILVER first." << endl;
-            if (!bronzeDone)
-                cout << "  Missing: visit all " << ROOMS_FOR_BRONZE << " rooms ("
+            if (roomsSeenEnd < ROOMS_FOR_BRONZE)
+                cout << "  Missing: visit " << ROOMS_FOR_BRONZE << " different rooms ("
                      << roomsSeenEnd << "/" << ROOMS_FOR_BRONZE << " visited)." << endl;
             if (!dialogHeard)
                 cout << "  Missing: read a sign (menu 14) or talk to Priya (menu 13)." << endl;
